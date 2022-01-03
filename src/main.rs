@@ -1,6 +1,7 @@
 use rand::Rng;
 use std::fmt;
 use std::io;
+use std::vec;
 
 fn main() {
     loop {
@@ -9,14 +10,16 @@ fn main() {
         println!("2 - Find the area of a rectangle");
         println!("3 - Play rectangle stacking");
         println!("4 - Play football");
+        println!("5 - Vectors");
 
-        let menu = get_menu_option(1, 4);
+        let menu = get_menu_option(1, 5);
 
         match menu {
             1 => guess_the_number(),
             2 => area_of_rectangle(),
             3 => rectangle_stacking(),
             4 => play_football(),
+            5 => vectors(),
             _ => break,
         }
     }
@@ -167,6 +170,7 @@ fn rectangle_stacking() {
     );
 }
 
+#[derive(Debug)]
 enum MatchResult {
     HomeWin,
     Draw,
@@ -174,6 +178,16 @@ enum MatchResult {
     Abandoned,
     Postponed,
     Scheduled(String),
+}
+
+impl fmt::Display for MatchResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let MatchResult::Scheduled(time) = self {
+            write!(f, "{}", time)
+        } else {
+            write!(f, "Game Over")
+        }
+    }
 }
 
 struct MatchScore {
@@ -304,4 +318,69 @@ fn play_football() {
     println!("Home win PEN: {}", home_win_penalties_time);
     println!("Draw: {}", draw);
     println!("Away win: {}", away_win_normal_time);
+}
+
+fn append_sum(vec: &mut Vec<i32>) {
+    let mut sum: i32 = 0;
+
+    for v in vec.iter() {
+        sum += v;
+    }
+
+    // Long way to deref the vector in a function call:
+    vec.push(sum);
+}
+
+fn games_to_be_played(all_games: &[MatchResult]) -> Vec<&MatchResult> {
+    let mut scheduled_games: Vec<&MatchResult> = Vec::new();
+    for g in all_games {
+        if let MatchResult::Scheduled(..) = g {
+            scheduled_games.push(g);
+        }
+    }
+    scheduled_games
+}
+
+fn multiply_vec(v: &mut Vec<f64>) {
+    for (i, val) in v.into_iter().enumerate() {
+        let f = i as f64;
+        *val *= f;
+    }
+}
+
+fn vectors() {
+    println!("Creating vectors");
+
+    let mut v1: Vec<i32> = Vec::new(); // Type of Vec::new() is impplied by defining the type in let
+    v1.push(0);
+    v1.push(1);
+    v1.push(2);
+    append_sum(&mut v1);
+
+    println!("v1: {:?}", v1);
+
+    let mut v2 = vec![
+        MatchResult::Abandoned,
+        MatchResult::Postponed,
+        MatchResult::Scheduled(String::from("15:00")),
+        MatchResult::HomeWin,
+        MatchResult::Draw,
+        MatchResult::Scheduled(String::from("19:00")),
+    ];
+
+    // There should be only two games to be played
+    let to_be_played = games_to_be_played(&v2);
+    println!("Games to be played: {:?}", to_be_played);
+
+    // Change the games: the details should update because we have returned a slice
+    v2[2] = MatchResult::Scheduled(String::from("15:45"));
+    v2[5] = MatchResult::HomeWin;
+
+    let to_be_played_now = games_to_be_played(&v2);
+    println!("Games to be played: {:?}", to_be_played_now);
+
+    let mut v3 = vec![0.5, 0.6, 1.4, -0.3, 7.2];
+    println!("Values in the array: {:?}", &v3);
+    multiply_vec(&mut v3);
+    println!("Modified values in the array: {:?}", &v3);
 }
