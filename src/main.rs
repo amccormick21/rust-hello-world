@@ -1,7 +1,8 @@
 use rand::Rng;
-use std::fmt;
-use std::io;
-use std::vec;
+use std::{
+    collections::{hash_map, HashMap},
+    fmt, io, vec,
+};
 
 fn main() {
     loop {
@@ -11,8 +12,11 @@ fn main() {
         println!("3 - Play rectangle stacking");
         println!("4 - Play football");
         println!("5 - Vectors");
+        println!("6 - Mean, median, and mode");
+        println!("7 - Pig Latin");
+        println!("8 - Employee Database");
 
-        let menu = get_menu_option(1, 5);
+        let menu = get_menu_option(1, 8);
 
         match menu {
             1 => guess_the_number(),
@@ -20,6 +24,9 @@ fn main() {
             3 => rectangle_stacking(),
             4 => play_football(),
             5 => vectors(),
+            6 => mean_median_mode(),
+            7 => pig_latin_converter(),
+            8 => employee_database(),
             _ => break,
         }
     }
@@ -383,4 +390,294 @@ fn vectors() {
     println!("Values in the array: {:?}", &v3);
     multiply_vec(&mut v3);
     println!("Modified values in the array: {:?}", &v3);
+}
+
+struct ArrayDetails {
+    mean: f64,
+    mode: i32,
+    median: f64,
+}
+
+impl fmt::Display for ArrayDetails {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(
+            f,
+            "Mean: {}\nMedian: {}\nMode: {}",
+            self.mean, self.median, self.mode
+        )
+    }
+}
+
+fn get_averages(vec: &mut Vec<i32>) -> ArrayDetails {
+    let mut sum: f64 = 0.;
+    let mut count: i32 = 0;
+    let mut map: HashMap<i32, i32> = HashMap::new();
+
+    vec.sort();
+
+    for v in vec.iter() {
+        sum += *v as f64;
+        count += 1;
+
+        let entry = map.entry(*v).or_insert(0);
+        *entry += 1;
+    }
+
+    let mut most_frequent = 0;
+    let mut freq_of_most_frequent = 0;
+    for (k, v) in &map {
+        if *v > freq_of_most_frequent {
+            freq_of_most_frequent = *v;
+            most_frequent = *k;
+        }
+    }
+
+    let mid_idx = (count / 2) as usize;
+    let median = if count & 1 == 1 {
+        // Count is odd, there is a middle point
+        vec[mid_idx] as f64
+    } else {
+        (vec[mid_idx - 1] + vec[mid_idx]) as f64 / 2.
+    };
+
+    ArrayDetails {
+        mean: sum / count as f64,
+        mode: most_frequent,
+        median,
+    }
+}
+
+fn mean_median_mode() {
+    let mut test1 = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9];
+
+    println!("Test1 vector: {:?}", test1);
+    let metrics = get_averages(&mut test1);
+    println!("Metrics:");
+    println!("{}", metrics);
+
+    let mut test2 = vec![-1, -1, 1, 1];
+
+    println!("Test2 vector: {:?}", test2);
+    let metrics = get_averages(&mut test2);
+    println!("Metrics:");
+    println!("{}", metrics);
+
+    let mut test3 = vec![4, 4, 4, 4, 5, 5, 5, 5, 6];
+
+    println!("Test3 vector: {:?}", test3);
+    let metrics = get_averages(&mut test3);
+    println!("Metrics:");
+    println!("{}", metrics);
+
+    let mut test4 = vec![9, 7, 4, 6, 8, 23, 5, -3, 23, 6, 4, 4, 8, 3, 0, -10];
+
+    println!("Test4 vector: {:?}", test4);
+    let metrics = get_averages(&mut test4);
+    println!("Metrics:");
+    println!("{}", metrics);
+}
+
+fn is_consonant(c: &str) -> bool {
+    match c {
+        "a" | "e" | "i" | "o" | "u" | "A" | "E" | "I" | "O" | "U" => false,
+        _ => true,
+    }
+}
+
+fn to_pig_latin(s: &str) -> String {
+    // Is the first letter a vowel or a consonant?
+    let mut sep = 1;
+    while !s.is_char_boundary(sep) && sep < s.len() {
+        sep += 1;
+    }
+
+    if sep == s.len() {
+        // All vowels
+        let mut new_str = String::from(s);
+        new_str.push_str("hay");
+        return new_str;
+    }
+
+    // The first character is then a slice:
+    let first_char = &s[0..sep];
+
+    if is_consonant(first_char) {
+        let mut new_str = String::from(&s[sep..]);
+        new_str.push_str(first_char);
+        new_str.push_str("ay");
+        new_str
+    } else {
+        let mut new_str = String::from(s);
+        new_str.push_str("hay");
+        new_str
+    }
+}
+
+fn pig_latin_converter() {
+    let story =
+        "The quick brown fox jumped over the lazy dog aaa a b oops Здравствуйте aЗдравствуйте Apple First";
+
+    let mut translated_story = String::new();
+    for word in story.split(" ") {
+        translated_story.push_str(&to_pig_latin(word));
+        translated_story.push_str(" ");
+    }
+
+    println!("Story: {}", story);
+    println!("Translation: {}", translated_story);
+}
+
+#[derive(Debug)]
+struct EmployeeDetails {
+    name: String,
+    department: String,
+}
+
+enum EmployeeActions {
+    Add(EmployeeDetails),
+    Remove(EmployeeDetails),
+    Repeat(String),
+    Display,
+    Quit,
+}
+
+fn get_single_action(action: &str) -> EmployeeActions {
+    match &action.to_lowercase()[..] {
+        "quit" | "exit" => EmployeeActions::Quit,
+        "continue" | "display" | "finished" => EmployeeActions::Display,
+        "repeat" => EmployeeActions::Repeat(String::from("Repeat requested")),
+        _ => EmployeeActions::Repeat(format!("Did not recognise input {}", action)),
+    }
+}
+
+fn get_details_action(action: &[&str]) -> EmployeeActions {
+    if action.len() >= 3 {
+        let name = String::from(action[1]);
+
+        let department = if action.len() == 3 {
+            String::from(action[2])
+        } else if action.len() >= 4 {
+            String::from(action[3])
+        } else {
+            return EmployeeActions::Repeat(String::from("Failed to parse a department"));
+        };
+
+        let employee_details = EmployeeDetails { name, department };
+
+        match &action[0].to_lowercase()[..] {
+            "add" => EmployeeActions::Add(employee_details),
+            "remove" => EmployeeActions::Remove(employee_details),
+            _ => EmployeeActions::Repeat(String::from("Failed to parse an action")),
+        }
+    } else {
+        EmployeeActions::Repeat(String::from("Not enough inputs"))
+    }
+}
+
+fn parse_employee_details(line: &str) -> EmployeeActions {
+    let parts: Vec<&str> = line.split(" ").collect();
+
+    match parts.len() {
+        0 => EmployeeActions::Repeat(String::from("No data was entered")),
+        1 => get_single_action(parts[0]),
+        2 => EmployeeActions::Repeat(String::from("Insufficient data entered")),
+        3 | 4 => get_details_action(&parts[..]),
+        _ => EmployeeActions::Repeat(String::from("Too much data entered")),
+    }
+}
+
+fn employee_database() {
+    let mut company: HashMap<String, Vec<String>> = HashMap::new();
+
+    let mut getting_inputs = true;
+
+    while getting_inputs {
+        println!("Enter instruction");
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => (),
+            Err(_) => {
+                println!("Failed to read input");
+                continue;
+            }
+        }
+
+        match parse_employee_details(input.trim()) {
+            EmployeeActions::Add(employee) => {
+                let department = company.entry(employee.department).or_insert(Vec::new());
+                department.push(employee.name);
+            }
+            EmployeeActions::Remove(employee) => {
+                if let hash_map::Entry::Occupied(department) =
+                    company.entry(employee.department.clone())
+                {
+                    let values = department.into_mut();
+                    if let Some(idx) = values.iter().position(|x| *x == employee.name) {
+                        values.remove(idx);
+                    };
+                    if values.len() == 0 {
+                        company.remove(&employee.department);
+                    }
+                }
+            }
+            EmployeeActions::Display => getting_inputs = false,
+            EmployeeActions::Quit => return,
+            EmployeeActions::Repeat(message) => println!("Try again: {}", message),
+        };
+    }
+
+    for (k, v) in company {
+        println!("Department: {}\nEmployees: {:?}", k, v);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn rectangle_should_fit() {
+        let r1 = Rectangle {
+            width: 5.,
+            height: 10.,
+        };
+
+        let r2 = Rectangle {
+            width: 10.,
+            height: 12.,
+        };
+
+        assert!(r2.can_hold(&r1));
+    }
+
+    #[test]
+    fn rectangle_should_not_fit() {
+        let r1 = Rectangle {
+            width: 5.,
+            height: 10.,
+        };
+
+        let r2 = Rectangle {
+            width: 10.,
+            height: 12.,
+        };
+
+        assert!(!r1.can_hold(&r2));
+    }
+
+    #[test]
+    fn rectangle_might_fit() {
+        let r1 = Rectangle {
+            width: 5.,
+            height: 10.,
+        };
+
+        let r2 = Rectangle {
+            width: 6.,
+            height: 4.,
+        };
+
+        assert!(!r1.can_hold(&r2));
+    }
 }
