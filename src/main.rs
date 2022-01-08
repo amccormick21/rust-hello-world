@@ -1,7 +1,7 @@
 use rand::Rng;
 use std::{
     collections::{hash_map, HashMap},
-    fmt, io, vec,
+    fmt, fs, io, path, vec,
 };
 
 fn main() {
@@ -15,8 +15,9 @@ fn main() {
         println!("6 - Mean, median, and mode");
         println!("7 - Pig Latin");
         println!("8 - Employee Database");
+        println!("9 - Grep");
 
-        let menu = get_menu_option(1, 8);
+        let menu = get_menu_option(1, 9);
 
         match menu {
             1 => guess_the_number(),
@@ -27,6 +28,7 @@ fn main() {
             6 => mean_median_mode(),
             7 => pig_latin_converter(),
             8 => employee_database(),
+            9 => grep(),
             _ => break,
         }
     }
@@ -679,5 +681,35 @@ mod tests {
         };
 
         assert!(!r1.can_hold(&r2));
+    }
+}
+
+fn grep() {
+    println!("Enter the file name to search: ");
+
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read input");
+
+    println!("Enter the search term: ");
+    let mut search_term = String::new();
+    io::stdin()
+        .read_line(&mut search_term)
+        .expect("Failed to read search term");
+
+    let filepath = path::Path::new("res/").join(&input.trim());
+    let file_contents = fs::read_to_string(&filepath).expect("Failed to read file");
+
+    let mut matching_lines: Vec<&str> = Vec::new();
+    for line in file_contents.lines() {
+        println!("{}", line);
+        if line.contains(&search_term) {
+            matching_lines.push(line)
+        }
+    }
+
+    for line in matching_lines.iter() {
+        println!("{}", line);
     }
 }
